@@ -1,0 +1,37 @@
+name: CI Crud API
+
+on:
+  push:
+    branches: [ "main"] # Roda ao dar push nessas branches
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-suite:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3' # Verifique se é a versão do seu servidor
+          extensions: mbstring, dom, curl, sqlite, bcmath
+          coverage: none
+
+      - name: Install Dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Prepare Laravel Environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          mkdir -p database
+          touch database/database.sqlite
+
+      - name: Run Pest Tests
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: database/database.sqlite
+        run: ./vendor/bin/pest --parallel
