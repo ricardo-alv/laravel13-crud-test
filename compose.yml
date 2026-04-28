@@ -1,0 +1,67 @@
+services:
+  # App Service (PHP)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: laravel-app
+    container_name: laravel-app
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    networks:
+      - laravel-network
+
+  # Web Server (Nginx)
+  nginx:
+    image: nginx:alpine
+    container_name: laravel-nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www
+      - ./docker/nginx:/etc/nginx/conf.d/
+    networks:
+      - laravel-network
+
+  # Database (MySQL)
+  db:
+    image: mysql:8.0
+    container_name: mysql-db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3307:3306" # Sua máquina acessa via 3307
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      #MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./docker/mysql:/var/lib/mysql
+    networks:
+      - laravel-network
+
+  # phpMyAdmin
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      - PMA_HOST=db
+      - PMA_PORT=3306
+      - ARBITRARY=1
+    networks:
+      - laravel-network
+
+networks:
+  laravel-network:
+    driver: bridge
